@@ -1,79 +1,57 @@
 /* =========================================================
-   RABELLO VOICE - SHORTCUT BAR (WHATSAPP NATIVE INTEGRATION)
-   - Variáveis CSS nativas do WhatsApp (--WDS-*, --rich-text-*)
-   - Compatibilidade automática dark/light mode
-   - Estrutura 3-layer matching WhatsApp components
+   RABELLO VOICE - SHORTCUT BAR (CHIP DESIGN)
+   - Chips arredondados com bordas coloridas
+   - Setas de expansão (>)
+   - Verde/Azul/Vermelho por tipo
 ========================================================= */
 
 /* Container Principal */
 #rabello-voice-bar {
-  position: relative;
   display: flex;
-  align-items: stretch;
-  flex-wrap: nowrap; /* CRÍTICO: Impede quebra de linha, força scroll horizontal */
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+  padding: 8px 12px;
   
   width: 100%;
-  height: 48px;
+  height: auto;
+  min-height: 52px;
   overflow-x: auto;
-  overflow-y: hidden;
   
-  /* Variáveis nativas do WhatsApp */
-  background-color: var(--rich-text-panel-background);
-  border-top: 1px solid var(--border-panel);
+  background: var(--rich-text-panel-background, #111b21);
+  border-top: 1px solid var(--border-panel, #222d34);
   
-  /* Scrollbar oculta */
   scrollbar-width: none;
   -ms-overflow-style: none;
-  
-  z-index: 50;
-  will-change: scroll-position;
 }
 
 #rabello-voice-bar::-webkit-scrollbar {
   display: none;
 }
 
-/* Item de Atalho */
+/* Chip de Atalho */
 .rv-shortcut-item {
   display: inline-flex;
-  height: 100%;
-  flex-shrink: 0;
-  
-  cursor: pointer;
-  user-select: none;
-  
-  /* Divisória nativa WDS */
-  border-right: 1px solid var(--WDS-lines-divider, rgba(255, 255, 255, 0.05));
-  
-  transition: background-color 0.2s ease;
-  margin: 0;
-  padding: 0;
-}
-
-/* Hover State - Variável Nativa */
-.rv-shortcut-item:hover {
-  background-color: var(--background-default-hover, rgba(255, 255, 255, 0.08));
-}
-
-/* Active State */
-.rv-shortcut-item:active {
-  background-color: rgba(255, 255, 255, 0.12);
-}
-
-/* Container de Conteúdo */
-.rv-shortcut-content {
-  display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 16px;
-  height: 100%;
+  padding: 8px 12px;
   
-  color: var(--primary-strong);
-  font-size: 13.5px;
+  background: transparent;
+  border: 1.5px solid;
+  border-radius: 20px;
+  
+  cursor: pointer;
+  flex-shrink: 0;
+  
+  font-size: 13px;
   font-weight: 500;
-  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  color: var(--primary-strong, #e9edef);
   
-  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.rv-shortcut-item:hover {
+  transform: translateY(-1px);
 }
 
 /* Ícone */
@@ -82,90 +60,100 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  
-  color: var(--icon-lighter);
-  transition: transform 0.2s ease;
 }
 
 .rv-shortcut-icon svg {
-  width: 18px;
-  height: 18px;
-  stroke-width: 1.2;
-}
-
-.rv-shortcut-item:hover .rv-shortcut-icon {
-  transform: scale(1.1);
+  width: 16px;
+  height: 16px;
 }
 
 /* Label */
 .rv-shortcut-label {
-  flex: 1;
   white-space: nowrap;
+  max-width: 150px;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 180px;
 }
 
 /* Seta de Expansão */
 .rv-shortcut-expand {
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
   margin-left: 4px;
-  
-  color: var(--icon-lighter);
-  opacity: 0.6;
-  
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  opacity: 0.7;
+  transition: transform 0.2s ease;
 }
 
 .rv-shortcut-expand svg {
-  width: 24px;
-  height: 24px;
+  width: 16px;
+  height: 16px;
 }
 
 .rv-shortcut-item:hover .rv-shortcut-expand {
-  opacity: 1;
   transform: translateX(2px);
+  opacity: 1;
 }
 
 /* =========================================================
-   VARIANTES POR TIPO (Cores de Acentuação)
+   CORES POR TIPO
 ========================================================= */
 
-/* Message - Vermelho */
-.rv-shortcut-item[data-type="message"] .rv-shortcut-icon {
-  color: #e74c3c;
+/* Message - Verde */
+.rv-shortcut-item[data-type="message"] {
+  border-color: #25D366;
+  color: #25D366;
+}
+
+.rv-shortcut-item[data-type="message"] .rv-shortcut-icon,
+.rv-shortcut-item[data-type="message"] .rv-shortcut-expand {
+  color: #25D366;
 }
 
 .rv-shortcut-item[data-type="message"]:hover {
-  background-color: rgba(231, 76, 60, 0.08);
+  background: rgba(37, 211, 102, 0.1);
 }
 
 /* Audio - Azul */
-.rv-shortcut-item[data-type="audio"] .rv-shortcut-icon {
+.rv-shortcut-item[data-type="audio"] {
+  border-color: #5dade2;
+  color: #5dade2;
+}
+
+.rv-shortcut-item[data-type="audio"] .rv-shortcut-icon,
+.rv-shortcut-item[data-type="audio"] .rv-shortcut-expand {
   color: #5dade2;
 }
 
 .rv-shortcut-item[data-type="audio"]:hover {
-  background-color: rgba(93, 173, 226, 0.08);
+  background: rgba(93, 173, 226, 0.1);
 }
 
 /* Media - Azul */
-.rv-shortcut-item[data-type="media"] .rv-shortcut-icon {
+.rv-shortcut-item[data-type="media"] {
+  border-color: #5dade2;
+  color: #5dade2;
+}
+
+.rv-shortcut-item[data-type="media"] .rv-shortcut-icon,
+.rv-shortcut-item[data-type="media"] .rv-shortcut-expand {
   color: #5dade2;
 }
 
 .rv-shortcut-item[data-type="media"]:hover {
-  background-color: rgba(93, 173, 226, 0.08);
+  background: rgba(93, 173, 226, 0.1);
 }
 
-/* Funnel - Verde */
-.rv-shortcut-item[data-type="funnel"] .rv-shortcut-icon {
-  color: #2ecc71;
+/* Funnel - Roxo/Vermelho */
+.rv-shortcut-item[data-type="funnel"] {
+  border-color: #9b59b6;
+  color: #9b59b6;
+}
+
+.rv-shortcut-item[data-type="funnel"] .rv-shortcut-icon,
+.rv-shortcut-item[data-type="funnel"] .rv-shortcut-expand {
+  color: #9b59b6;
 }
 
 .rv-shortcut-item[data-type="funnel"]:hover {
-  background-color: rgba(46, 204, 113, 0.08);
+  background: rgba(155, 89, 182, 0.1);
 }

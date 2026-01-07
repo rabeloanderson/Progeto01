@@ -51,7 +51,8 @@ function findInputBox() {
   // CRÍTICO: Restringe a busca ao container principal (#main) para evitar a sidebar
   const mainChat = document.querySelector('#main');
   if (!mainChat) {
-    console.warn('[Rabello Voice] Container #main não encontrado - chat não está aberto');
+    // Isso é NORMAL quando nenhum chat está aberto - não é um erro
+    console.log('[Rabello Voice] Aguardando abertura de um chat...');
     return null;
   }
   
@@ -274,63 +275,58 @@ function createIconSVG(type) {
 
 /**
  * Cria um elemento de atalho (shortcut) usando createElement
- * ARQUITETURA: 3 camadas (wrapper > content > icon/label/expand)
+ * DESIGN: Chip arredondado com borda colorida e seta de expansão
  * @param {Object} item - Item do storage (message, audio, media, funnel)
  * @returns {HTMLElement} Elemento div.rv-shortcut-item
  */
 function createShortcutElement(item) {
-  // 1. Container Principal
-  const itemWrapper = document.createElement('div');
-  itemWrapper.className = 'rv-shortcut-item';
-  itemWrapper.setAttribute('data-type', item.type);
-  itemWrapper.setAttribute('role', 'button');
-  itemWrapper.setAttribute('tabindex', '0');
+  // Container do Chip
+  const chip = document.createElement('div');
+  chip.className = 'rv-shortcut-item';
+  chip.setAttribute('data-type', item.type);
+  chip.setAttribute('role', 'button');
+  chip.setAttribute('tabindex', '0');
   
   // Tooltip
   if (item.content) {
-    itemWrapper.title = item.content.substring(0, 100);
+    chip.title = item.content.substring(0, 100);
   }
   
-  // 2. Wrapper de Conteúdo
-  const contentWrapper = document.createElement('div');
-  contentWrapper.className = 'rv-shortcut-content';
-  
-  // 3. Ícone (Lado Esquerdo)
+  // Ícone (Lado Esquerdo)
   const iconSpan = document.createElement('span');
   iconSpan.className = 'rv-shortcut-icon';
   iconSpan.appendChild(createIconSVG(item.type));
   
-  // 4. Label (Texto Central)
+  // Label (Texto)
   const labelSpan = document.createElement('span');
   labelSpan.className = 'rv-shortcut-label';
-  labelSpan.textContent = item.title || 'Sem título';
+  labelSpan.textContent = item.title || 'Item';
   
-  // 5. Seta de Expansão (Lado Direito)
+  // Seta de Expansão (>)
   const expandSpan = document.createElement('span');
   expandSpan.className = 'rv-shortcut-expand';
-  expandSpan.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M8.91 19.92L15.43 13.4C16.2 12.63 16.2 11.37 15.43 10.6L8.91 4.08" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  expandSpan.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   
-  // Montagem da Hierarquia
-  contentWrapper.appendChild(iconSpan);
-  contentWrapper.appendChild(labelSpan);
-  contentWrapper.appendChild(expandSpan);
-  itemWrapper.appendChild(contentWrapper);
+  // Montagem
+  chip.appendChild(iconSpan);
+  chip.appendChild(labelSpan);
+  chip.appendChild(expandSpan);
   
   // Event Listeners
-  itemWrapper.addEventListener('click', (e) => {
+  chip.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
     handleItemClick(item);
   });
   
-  itemWrapper.addEventListener('keydown', (e) => {
+  chip.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       handleItemClick(item);
     }
   });
   
-  return itemWrapper;
+  return chip;
 }
 
 // Função principal de injeção OTIMIZADA (Agora usa Factory + seletores resilientes!)
@@ -772,18 +768,18 @@ async function tryInjectWithRetry() {
     await injectBar();
     return true;
   } else {
-    // Ainda não encontrou
+    // Ainda não encontrou - aguarda silenciosamente
     retryCount++;
     
     if (retryCount < MAX_RETRIES) {
-      console.log(`[Rabello Voice] ⏳ Aguardando WhatsApp carregar... Tentativa ${retryCount}/${MAX_RETRIES}`);
+      // Mensagem silenciosa - não polui o console
+      if (retryCount === 1) {
+        console.log('[Rabello Voice] 👀 Aguardando você abrir uma conversa...');
+      }
       setTimeout(tryInjectWithRetry, RETRY_INTERVAL);
     } else {
-      console.error('[Rabello Voice] ❌ Timeout: WhatsApp Web não carregou após 30s.');
-      console.error('[Rabello Voice] 💡 Possíveis soluções:');
-      console.error('   1. Abra uma conversa no WhatsApp Web');
-      console.error('   2. Recarregue a página (F5)');
-      console.error('   3. Verifique se está em https://web.whatsapp.com');
+      // Não mostra erro - o MutationObserver vai cuidar quando um chat for aberto
+      console.log('[Rabello Voice] ℹ️ Nenhum chat aberto. A barra aparecerá automaticamente quando você abrir uma conversa.');
     }
     return false;
   }
