@@ -274,16 +274,13 @@ function createIconSVG(type) {
 }
 
 /**
- * Cria um elemento de atalho (shortcut) usando createElement
- * DESIGN: Chip arredondado com borda colorida e seta de expansão
- * @param {Object} item - Item do storage (message, audio, media, funnel)
- * @returns {HTMLElement} Elemento div.rv-shortcut-item
+ * Cria o elemento no estilo "Split Button" (Texto | Seta)
  */
 function createShortcutElement(item) {
-  // Container do Chip
+  // Container Principal (A pílula com borda)
   const chip = document.createElement('div');
   chip.className = 'rv-shortcut-item';
-  chip.setAttribute('data-type', item.type);
+  chip.setAttribute('data-type', item.type || 'default'); // Fallback para verde
   chip.setAttribute('role', 'button');
   chip.setAttribute('tabindex', '0');
   
@@ -292,27 +289,34 @@ function createShortcutElement(item) {
     chip.title = item.content.substring(0, 100);
   }
   
-  // Ícone (Lado Esquerdo)
+  // PARTE 1: Esquerda (Ícone + Texto)
+  const mainPart = document.createElement('div');
+  mainPart.className = 'rv-shortcut-main';
+  
+  // Ícone
   const iconSpan = document.createElement('span');
   iconSpan.className = 'rv-shortcut-icon';
   iconSpan.appendChild(createIconSVG(item.type));
   
-  // Label (Texto)
+  // Texto Label
   const labelSpan = document.createElement('span');
   labelSpan.className = 'rv-shortcut-label';
   labelSpan.textContent = item.title || 'Item';
   
-  // Seta de Expansão (>)
-  const expandSpan = document.createElement('span');
+  mainPart.appendChild(iconSpan);
+  mainPart.appendChild(labelSpan);
+  
+  // PARTE 2: Direita (Separador + Seta)
+  const expandSpan = document.createElement('div'); // Div para poder ter borda
   expandSpan.className = 'rv-shortcut-expand';
-  expandSpan.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  // Ícone da seta (Chevron Right >)
+  expandSpan.innerHTML = `<svg width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M1.5 1L8.5 8L1.5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   
   // Montagem
-  chip.appendChild(iconSpan);
-  chip.appendChild(labelSpan);
+  chip.appendChild(mainPart);
   chip.appendChild(expandSpan);
   
-  // Event Listeners
+  // Evento de Clique (No chip inteiro)
   chip.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();

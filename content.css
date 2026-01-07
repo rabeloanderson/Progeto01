@@ -1,159 +1,106 @@
 /* =========================================================
-   RABELLO VOICE - SHORTCUT BAR (CHIP DESIGN)
-   - Chips arredondados com bordas coloridas
-   - Setas de expansão (>)
-   - Verde/Azul/Vermelho por tipo
+   RABELLO VOICE - DESIGN SPLIT NEON (EXATO DA FOTO)
 ========================================================= */
 
-/* Container Principal */
 #rabello-voice-bar {
   display: flex;
   align-items: center;
-  flex-wrap: nowrap;
-  gap: 8px;
-  padding: 8px 12px;
-  
+  gap: 12px;
+  padding: 10px 16px;
   width: 100%;
-  height: auto;
-  min-height: 52px;
+  
+  /* Fundo escuro para destacar o neon */
+  background-color: var(--rich-text-panel-background, #202c33);
+  border-top: 1px solid rgba(134, 150, 160, 0.15);
+  
   overflow-x: auto;
-  
-  background: var(--rich-text-panel-background, #111b21);
-  border-top: 1px solid var(--border-panel, #222d34);
-  
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  white-space: nowrap;
+  scrollbar-width: none; 
 }
 
 #rabello-voice-bar::-webkit-scrollbar {
   display: none;
 }
 
-/* Chip de Atalho */
+/* O CONTAINER DO BOTÃO */
 .rv-shortcut-item {
   display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  align-items: stretch; /* Estica para a linha divisória ficar completa */
+  justify-content: center;
   
-  background: transparent;
-  border: 1.5px solid;
-  border-radius: 20px;
+  /* Borda Colorida (definida pelas cores abaixo) */
+  border: 1px solid currentColor;
+  border-radius: 50px; /* Redondo completo */
   
-  cursor: pointer;
-  flex-shrink: 0;
+  background-color: transparent; /* Fundo transparente */
   
-  font-size: 13px;
+  font-family: inherit;
+  font-size: 14px;
   font-weight: 500;
-  color: var(--primary-strong, #e9edef);
+  cursor: pointer;
   
   transition: all 0.2s ease;
+  user-select: none;
+  overflow: hidden; /* Garante que o hover não vaze */
 }
 
 .rv-shortcut-item:hover {
+  background-color: rgba(255, 255, 255, 0.05); /* Brilho leve no hover */
   transform: translateY(-1px);
 }
 
-/* Ícone */
-.rv-shortcut-icon {
+/* LADO ESQUERDO (Ícone + Texto) */
+.rv-shortcut-main {
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+  gap: 8px;
+  padding: 6px 12px 6px 16px; /* Espaçamento interno */
 }
 
 .rv-shortcut-icon svg {
   width: 16px;
   height: 16px;
+  fill: none; /* Garante que o ícone use a cor da borda */
 }
 
-/* Label */
-.rv-shortcut-label {
-  white-space: nowrap;
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Seta de Expansão */
+/* LADO DIREITO (A Seta >) */
 .rv-shortcut-expand {
   display: flex;
   align-items: center;
-  margin-left: 4px;
-  opacity: 0.7;
-  transition: transform 0.2s ease;
+  justify-content: center;
+  padding: 0 10px;
+  
+  /* A LINHA DIVISÓRIA VERTICAL */
+  border-left: 1px solid currentColor; 
 }
 
 .rv-shortcut-expand svg {
-  width: 16px;
-  height: 16px;
-}
-
-.rv-shortcut-item:hover .rv-shortcut-expand {
-  transform: translateX(2px);
-  opacity: 1;
+  width: 14px;
+  height: 14px;
 }
 
 /* =========================================================
-   CORES POR TIPO
+   CORES NEON (Baseado no Print)
 ========================================================= */
 
-/* Message - Verde */
+/* VERDE (Funis / Padrão) - Ex: Popnavegador, Pix */
+.rv-shortcut-item[data-type="funnel"],
+.rv-shortcut-item[data-type="default"] {
+  color: #2ecc71; /* Verde Neon */
+  border-color: #2ecc71;
+}
+
+/* VERMELHO (Mensagens) */
 .rv-shortcut-item[data-type="message"] {
-  border-color: #25D366;
-  color: #25D366;
+  color: #ff5252; /* Vermelho Neon */
+  border-color: #ff5252;
+  background-color: rgba(255, 82, 82, 0.1); /* Leve fundo vermelho no print */
 }
 
-.rv-shortcut-item[data-type="message"] .rv-shortcut-icon,
-.rv-shortcut-item[data-type="message"] .rv-shortcut-expand {
-  color: #25D366;
-}
-
-.rv-shortcut-item[data-type="message"]:hover {
-  background: rgba(37, 211, 102, 0.1);
-}
-
-/* Audio - Azul */
+/* AZUL/ROXO (Mídias) */
+.rv-shortcut-item[data-type="media"],
 .rv-shortcut-item[data-type="audio"] {
-  border-color: #5dade2;
-  color: #5dade2;
-}
-
-.rv-shortcut-item[data-type="audio"] .rv-shortcut-icon,
-.rv-shortcut-item[data-type="audio"] .rv-shortcut-expand {
-  color: #5dade2;
-}
-
-.rv-shortcut-item[data-type="audio"]:hover {
-  background: rgba(93, 173, 226, 0.1);
-}
-
-/* Media - Azul */
-.rv-shortcut-item[data-type="media"] {
-  border-color: #5dade2;
-  color: #5dade2;
-}
-
-.rv-shortcut-item[data-type="media"] .rv-shortcut-icon,
-.rv-shortcut-item[data-type="media"] .rv-shortcut-expand {
-  color: #5dade2;
-}
-
-.rv-shortcut-item[data-type="media"]:hover {
-  background: rgba(93, 173, 226, 0.1);
-}
-
-/* Funnel - Roxo/Vermelho */
-.rv-shortcut-item[data-type="funnel"] {
-  border-color: #9b59b6;
-  color: #9b59b6;
-}
-
-.rv-shortcut-item[data-type="funnel"] .rv-shortcut-icon,
-.rv-shortcut-item[data-type="funnel"] .rv-shortcut-expand {
-  color: #9b59b6;
-}
-
-.rv-shortcut-item[data-type="funnel"]:hover {
-  background: rgba(155, 89, 182, 0.1);
+  color: #5352ed; /* Azulão Neon */
+  border-color: #5352ed;
+  background-color: rgba(83, 82, 237, 0.1); /* Leve fundo azul */
 }
