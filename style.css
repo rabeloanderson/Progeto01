@@ -10,14 +10,15 @@
    THEME VARIABLES
 ========================================================= */
 :root {
-  --bg-dark: #0f0f0f;
+  /* Tons de cinza mais sofisticados */
+  --bg-dark: #0b0e11;
   --bg-sidebar: #000000;
   --bg-header: #000000;
   --bg-footer: #000000;
 
-  --bg-card: #202020;
+  --bg-card: #15191c;
   --bg-card-2: #252525;
-  --bg-hover: #2a2a2a;
+  --bg-hover: #1f2428;
 
   --text-primary: #ffffff;
   --text-secondary: #aaaaaa;
@@ -28,14 +29,17 @@
   --accent-orange: #e67e22;
   --danger: #e74c3c;
 
-  --border-color: #333;
+  --border-color: rgba(255, 255, 255, 0.08);
   --border-color-2: #444;
 
+  /* Sombra suave estilo Google */
   --shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  --shadow-premium: 0 8px 24px rgba(0, 0, 0, 0.2);
 
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
+  /* Cantos mais arredondados (moderno) */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
 
   --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
@@ -57,6 +61,8 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased; /* Melhora a renderização da fonte em telas Retina */
 }
 
 /* Focus states (acessibilidade) */
@@ -162,7 +168,7 @@ header {
   gap: 10px;
 }
 
-/* nav item premium */
+/* nav item premium - modernizado com pill shape */
 .nav-item {
   display: flex;
   flex-direction: column;
@@ -173,13 +179,14 @@ header {
   color: var(--text-secondary);
 
   padding: 10px 5px;
-  border-radius: var(--radius-md);
+  border-radius: 16px; /* Cantos mais arredondados */
   cursor: pointer;
   text-align: center;
   font-size: 0.75rem;
-  height: 80px;
+  height: 64px; /* Mais compacto */
+  margin: 8px;
 
-  border-left: 3px solid transparent;
+  border-left: none !important; /* Remove a borda lateral */
   transition: all 0.25s ease;
   user-select: none;
 }
@@ -199,11 +206,14 @@ header {
   transform: translateY(-2px);
 }
 
+/* Indicador visual moderno - pill shape */
 .nav-item.active {
-  border-left: 3px solid var(--accent-green);
+  background-color: rgba(46, 204, 113, 0.15);
   color: var(--accent-green);
-  background: linear-gradient(90deg, rgba(46, 204, 113, 0.15) 0%, rgba(46, 204, 113, 0) 100%);
-  box-shadow: 0 0 15px rgba(46, 204, 113, 0.1);
+}
+
+.nav-item.active i {
+  transform: scale(1.1);
 }
 
 /* =========================================================
@@ -215,7 +225,7 @@ header {
   margin: 10px 10px 0 10px;
   border-top-left-radius: var(--radius-md);
   border-top-right-radius: var(--radius-md);
-  padding: 20px;
+  padding: 24px; /* Mais whitespace */
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -235,6 +245,7 @@ header {
   font-size: 1.5rem;
   font-weight: 500;
   margin-bottom: 5px;
+  letter-spacing: -0.5px; /* Deixa o título mais moderno e robusto */
 }
 
 .content-title p {
@@ -246,22 +257,26 @@ header {
    BUTTONS
 ========================================================= */
 .btn-add {
-  background-color: #e0e0e0;
-  color: #000;
+  background: linear-gradient(135deg, var(--accent-green), #27ae60);
+  color: #fff;
   border: none;
-  padding: 8px 16px;
-  border-radius: 999px;
+  padding: 10px 24px;
+  border-radius: 12px;
   font-weight: bold;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 6px;
-  transition: background 0.2s;
+  box-shadow: 0 4px 14px rgba(46, 204, 113, 0.3);
+  text-transform: none;
+  letter-spacing: 0.3px;
+  transition: all 0.2s ease;
   white-space: nowrap;
 }
 
 .btn-add:hover {
-  background-color: #ffffff;
+  filter: brightness(1.1);
+  transform: scale(1.02);
 }
 
 .btn-block {
@@ -333,12 +348,20 @@ header {
 }
 
 .message-item {
-  background-color: #2b2b2b;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
   padding: 15px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.message-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-premium);
+  background-color: var(--bg-hover);
 }
 
 .message-name {
@@ -411,7 +434,8 @@ footer {
   inset: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0,0,0,0.7);
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px); /* Efeito de vidro desfocado ao fundo */
   z-index: 1000;
   justify-content: center;
   align-items: center;
@@ -424,7 +448,8 @@ footer {
 .modal-container {
   background-color: var(--bg-card-2);
   width: 600px;
-  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px; /* Cantos mais suaves */
   box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
@@ -777,6 +802,7 @@ footer {
   background-color: #ccc;
   border-radius: 2px;
   height: 100%;
+  transition: all 0.3s ease; /* Transição suave para as barras do waveform */
 }
 
 .bar:nth-child(odd) { height: 60%; }

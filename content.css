@@ -1,82 +1,89 @@
 /* =========================================================
-   RABELLO VOICE - SHORTCUT BAR (PREMIUM EDITION)
-   - Usa variáveis CSS nativas do WhatsApp para adaptação automática
-   - Scrollbar oculta (estilo Google/WhatsApp)
-   - Ícones SVG inline com micro-animações
-   - Design moderno com glassmorphism
+   RABELLO VOICE - SHORTCUT BAR (WHATSAPP NATIVE INTEGRATION)
+   - Variáveis CSS nativas do WhatsApp (--WDS-*, --rich-text-*)
+   - Compatibilidade automática dark/light mode
+   - Estrutura 3-layer matching WhatsApp components
 ========================================================= */
 
-/* Container Principal - Estilo Google/WhatsApp */
+/* Container Principal */
 #rabello-voice-bar {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  align-items: stretch;
+  flex-wrap: nowrap; /* CRÍTICO: Impede quebra de linha, força scroll horizontal */
   
-  /* Variáveis nativas do WhatsApp - Adaptação Automática */
-  background-color: var(--rich-text-panel-background, #202c33);
-  border-top: 1px solid var(--border-panel, #37404a);
-  
-  /* Scroll horizontal suave */
-  overflow-x: auto;
-  white-space: nowrap;
   width: 100%;
   height: 48px;
+  overflow-x: auto;
+  overflow-y: hidden;
   
-  /* Esconde scroll (premium) */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
+  /* Variáveis nativas do WhatsApp */
+  background-color: var(--rich-text-panel-background);
+  border-top: 1px solid var(--border-panel);
   
-  box-sizing: border-box;
-  z-index: 100;
+  /* Scrollbar oculta */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  
+  z-index: 50;
+  will-change: scroll-position;
 }
 
-/* Chrome/Safari/Edge - Scrollbar oculta */
 #rabello-voice-bar::-webkit-scrollbar {
   display: none;
 }
 
-/* O "Item" ou Botão de Atalho */
+/* Item de Atalho */
 .rv-shortcut-item {
   display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 16px;
-  
-  background-color: transparent;
-  border: 1px solid var(--border-stronger, #444);
-  border-radius: 20px;
-  
-  color: var(--primary-strong, #e9edef);
-  font-family: inherit;
-  font-size: 13.5px;
-  font-weight: 500;
+  height: 100%;
+  flex-shrink: 0;
   
   cursor: pointer;
-  flex-shrink: 0; /* Impede que os botões encolham */
   user-select: none;
   
-  transition: background-color 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
+  /* Divisória nativa WDS */
+  border-right: 1px solid var(--WDS-lines-divider, rgba(255, 255, 255, 0.05));
+  
+  transition: background-color 0.2s ease;
+  margin: 0;
+  padding: 0;
 }
 
-/* Hover Premium */
+/* Hover State - Variável Nativa */
 .rv-shortcut-item:hover {
-  background-color: var(--background-default-hover, rgba(255, 255, 255, 0.05));
-  transform: translateY(-1px);
-  border-color: var(--border-default, #666);
+  background-color: var(--background-default-hover, rgba(255, 255, 255, 0.08));
 }
 
 /* Active State */
 .rv-shortcut-item:active {
-  transform: translateY(0) scale(0.98);
+  background-color: rgba(255, 255, 255, 0.12);
 }
 
-/* Ícone SVG */
+/* Container de Conteúdo */
+.rv-shortcut-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  height: 100%;
+  
+  color: var(--primary-strong);
+  font-size: 13.5px;
+  font-weight: 500;
+  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  
+  white-space: nowrap;
+}
+
+/* Ícone */
 .rv-shortcut-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--icon-lighter, #aaa);
+  flex-shrink: 0;
+  
+  color: var(--icon-lighter);
   transition: transform 0.2s ease;
 }
 
@@ -86,64 +93,79 @@
   stroke-width: 1.2;
 }
 
-/* Micro-animação no hover */
 .rv-shortcut-item:hover .rv-shortcut-icon {
   transform: scale(1.1);
 }
 
-/* Label do botão */
+/* Label */
 .rv-shortcut-label {
+  flex: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 150px;
+  max-width: 180px;
+}
+
+/* Seta de Expansão */
+.rv-shortcut-expand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-left: 4px;
+  
+  color: var(--icon-lighter);
+  opacity: 0.6;
+  
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.rv-shortcut-expand svg {
+  width: 24px;
+  height: 24px;
+}
+
+.rv-shortcut-item:hover .rv-shortcut-expand {
+  opacity: 1;
+  transform: translateX(2px);
 }
 
 /* =========================================================
-   VARIANTES DE ÍCONES POR TIPO (Cores de Borda Sutis)
+   VARIANTES POR TIPO (Cores de Acentuação)
 ========================================================= */
 
-/* Mensagem - Borda vermelha sutil */
-.rv-shortcut-item[data-type="message"] {
-  border-color: rgba(231, 76, 60, 0.4);
-}
-
-.rv-shortcut-item[data-type="message"]:hover {
-  border-color: rgba(231, 76, 60, 0.7);
-  background-color: rgba(231, 76, 60, 0.08);
-}
-
+/* Message - Vermelho */
 .rv-shortcut-item[data-type="message"] .rv-shortcut-icon {
   color: #e74c3c;
 }
 
-/* Áudio/Mídia - Borda azul sutil */
-.rv-shortcut-item[data-type="audio"],
-.rv-shortcut-item[data-type="media"] {
-  border-color: rgba(93, 173, 226, 0.4);
+.rv-shortcut-item[data-type="message"]:hover {
+  background-color: rgba(231, 76, 60, 0.08);
 }
 
-.rv-shortcut-item[data-type="audio"]:hover,
-.rv-shortcut-item[data-type="media"]:hover {
-  border-color: rgba(93, 173, 226, 0.7);
+/* Audio - Azul */
+.rv-shortcut-item[data-type="audio"] .rv-shortcut-icon {
+  color: #5dade2;
+}
+
+.rv-shortcut-item[data-type="audio"]:hover {
   background-color: rgba(93, 173, 226, 0.08);
 }
 
-.rv-shortcut-item[data-type="audio"] .rv-shortcut-icon,
+/* Media - Azul */
 .rv-shortcut-item[data-type="media"] .rv-shortcut-icon {
   color: #5dade2;
 }
 
-/* Funil - Borda verde sutil */
-.rv-shortcut-item[data-type="funnel"] {
-  border-color: rgba(46, 204, 113, 0.4);
+.rv-shortcut-item[data-type="media"]:hover {
+  background-color: rgba(93, 173, 226, 0.08);
+}
+
+/* Funnel - Verde */
+.rv-shortcut-item[data-type="funnel"] .rv-shortcut-icon {
+  color: #2ecc71;
 }
 
 .rv-shortcut-item[data-type="funnel"]:hover {
-  border-color: rgba(46, 204, 113, 0.7);
   background-color: rgba(46, 204, 113, 0.08);
-}
-
-.rv-shortcut-item[data-type="funnel"] .rv-shortcut-icon {
-  color: #2ecc71;
 }

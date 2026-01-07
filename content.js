@@ -8,45 +8,78 @@ const DEBOUNCE_DELAY = 500; // ms
 // Estado global para controle de debounce
 let debounceTimer = null;
 
-// ========== SELETORES RESILIENTES ==========
-// Sistema de fallback com múltiplos seletores para maior estabilidade
+// ========== SELETORES RESILIENTES COM CACHE ==========
+// Sistema de fallback com múltiplos seletores e cache inteligente
+
+// Cache de seletores (para performance)
+let cachedInputBox = null;
+let cachedFooter = null;
+let currentChatId = null;
 
 /**
- * Encontra a caixa de input do WhatsApp usando múltiplos seletores
- * Atualizado para WhatsApp Web 2026 com seletores modernos
+ * Obtém ID único do chat atual para invalidação de cache
+ */
+function getCurrentChatId() {
+  // Pega o header do chat que contém info da conversa
+  const chatHeader = document.querySelector('header[data-testid="conversation-header"]');
+  if (!chatHeader) return null;
+  
+  // Usa atributos únicos ou texto como ID
+  const titleElement = chatHeader.querySelector('[data-testid="conversation-info-header-chat-title"]');
+  return titleElement ? titleElement.textContent : null;
+}
+
+/**
+ * Encontra a caixa de input do WhatsApp APENAS dentro do chat ativo (#main)
+ * CORRIGIDO: Escopo restrito para evitar "confundir" com a barra de pesquisa da sidebar
  */
 function findInputBox() {
+  // Verifica invalidação de cache (mudança de chat)
+  const chatId = getCurrentChatId();
+  if (chatId !== currentChatId) {
+    console.log('[Rabello Voice] Chat mudou, invalidando cache de seletores');
+    cachedInputBox = null;
+    cachedFooter = null;
+    currentChatId = chatId;
+  }
+  
+  // Retorna cache se válido
+  if (cachedInputBox && document.body.contains(cachedInputBox)) {
+    return cachedInputBox;
+  }
+  
+  // CRÍTICO: Restringe a busca ao container principal (#main) para evitar a sidebar
+  const mainChat = document.querySelector('#main');
+  if (!mainChat) {
+    console.warn('[Rabello Voice] Container #main não encontrado - chat não está aberto');
+    return null;
+  }
+  
+  // === SELETORES ESCOPADOS PARA #main (Evita sidebar) ===
   const selectors = [
-    // === SELETORES ATUALIZADOS 2026 ===
+    // 1. PRIORIDADE MÁXIMA: Atributos específicos dentro de #main
+    '#main div[role="textbox"][contenteditable="true"][data-tab="10"]',
+    '#main div[role="textbox"][contenteditable="true"][data-tab]',
+    '#main div[role="textbox"][contenteditable="true"]',
     
-    // 1. Novo WhatsApp Web (Lexical Editor - 2024+)
-    'div[contenteditable="true"][data-lexical-editor="true"]',
-    'p[class*="selectable-text"][contenteditable="true"]',
-    'div.lexical-rich-text-input[contenteditable="true"]',
+    // 2. Atributos aria (multilíngue e estáveis) dentro de #main
+    '#main div[aria-placeholder*="Type a message"][contenteditable="true"]',
+    '#main div[aria-placeholder*="Digite uma mensagem"][contenteditable="true"]',
+    '#main div[aria-placeholder*="Escreva uma mensagem"][contenteditable="true"]',
+    '#main div[contenteditable="true"][aria-label*="Type a message"]',
+    '#main div[contenteditable="true"][aria-label*="mensagem"]',
     
-    // 2. Container principal do editor (mais específico)
-    'div[role="textbox"][contenteditable="true"][data-tab]',
-    'div[role="textbox"][contenteditable="true"]',
+    // 3. Novo WhatsApp Web (Lexical Editor) dentro de #main
+    '#main div[contenteditable="true"][data-lexical-editor="true"]',
+    '#main div.lexical-rich-text-input[contenteditable="true"]',
     
-    // 3. Baseado em aria-label/placeholder (multilíngue)
-    'div[aria-placeholder*="Type a message"]',
-    'div[aria-placeholder*="Digite uma mensagem"]',
-    'div[aria-placeholder*="Escreva uma mensagem"]',
-    'div[aria-label*="Type a message"]',
-    'div[aria-label*="mensagem"]',
-    
-    // 4. Estrutura do footer (versões antigas)
-    'footer div[contenteditable="true"]',
+    // 4. Contexto estrutural (footer dentro de #main)
     '#main footer div[contenteditable="true"]',
-    'div[data-tab="10"][contenteditable="true"]',
+    '#main footer [contenteditable="true"]',
     
-    // 5. Classes conhecidas (fallback)
-    'div[contenteditable="true"].selectable-text',
-    'div.copyable-text[contenteditable="true"]',
-    'div._ak1l[contenteditable="true"]', // Classe ofuscada comum
-    
-    // 6. Busca genérica final
-    'footer [contenteditable="true"]',
+    // 5. Fallback genérico (sempre dentro de #main)
+    '#main div[contenteditable="true"].selectable-text',
+    '#main div.copyable-text[contenteditable="true"]',
     '#main [contenteditable="true"]'
   ];
   
@@ -57,6 +90,8 @@ function findInputBox() {
       const element = document.querySelector(selector);
       if (element && element.isContentEditable) {
         console.log(`[Rabello Voice] ✓ Input encontrado via seletor #${i + 1}: ${selector}`);
+        // CACHE o resultado
+        cachedInputBox = element;
         return element;
       }
     } catch (e) {
@@ -86,94 +121,31 @@ function findInputBox() {
 
 /**
  * Encontra o container/footer onde a barra será injetada
- * GARANTE que será injetado no FOOTER do chat, nunca no header
+ * SIMPLIFICADO: Usa closest('footer') com validação de #main
  */
 function findTargetContainer(inputBox) {
   if (!inputBox) return null;
   
-  // ===== ESTRATÉGIA 1: FOOTER ESPECÍFICO DO CHAT =====
-  // Busca o footer que está dentro do #main (área do chat)
-  const strategies = [
-    // 1A. Footer dentro do #main (mais específico e correto)
-    () => {
-      const mainFooter = document.querySelector('#main footer');
-      // Valida que este footer realmente contém o nosso input
-      if (mainFooter && mainFooter.contains(inputBox)) {
-        return mainFooter;
-      }
-      return null;
-    },
-    
-    // 1B. Sobe a partir do input até encontrar footer
-    () => inputBox.closest('footer'),
-    
-    // 1C. Footer com role específico
-    () => {
-      const footer = inputBox.closest('[role="footer"]');
-      if (footer) return footer;
-      return null;
-    },
-    
-    // 1D. Estrutura relativa (parent do input - geralmente é o footer)
-    () => {
-      // Sobe até encontrar um elemento que seja footer ou contenha footer
-      let parent = inputBox.parentElement;
-      let depth = 0;
-      const maxDepth = 5; // Máximo 5 níveis
-      
-      while (parent && depth < maxDepth) {
-        // Se é um footer, retorna
-        if (parent.tagName === 'FOOTER') {
-          return parent;
-        }
-        // Se contém a palavra "footer" na classe
-        if (parent.className && parent.className.toLowerCase().includes('footer')) {
-          return parent;
-        }
-        parent = parent.parentElement;
-        depth++;
-      }
-      return null;
-    }
-  ];
-  
-  // Tenta cada estratégia
-  for (let i = 0; i < strategies.length; i++) {
-    try {
-      const container = strategies[i]();
-      if (container) {
-        // ===== VALIDAÇÃO ADICIONAL =====
-        // Garante que não é um header/sidebar
-        const tagName = container.tagName.toLowerCase();
-        const classNames = container.className.toLowerCase();
-        
-        // REJEITA se for header, nav, sidebar
-        if (tagName === 'header' || tagName === 'nav') {
-          console.warn(`[Rabello Voice] ⚠ Container rejeitado (${tagName}) - não é footer`);
-          continue;
-        }
-        
-        if (classNames.includes('header') || classNames.includes('sidebar') || classNames.includes('nav')) {
-          console.warn(`[Rabello Voice] ⚠ Container rejeitado (classe: ${classNames}) - não é footer`);
-          continue;
-        }
-        
-        // ACEITA apenas se for realmente footer
-        if (tagName === 'footer' || classNames.includes('footer')) {
-          console.log(`[Rabello Voice] ✓ Footer correto encontrado via estratégia #${i + 1}`);
-          return container;
-        }
-      }
-    } catch (e) {
-      continue;
-    }
+  // Retorna cache se válido
+  if (cachedFooter && document.body.contains(cachedFooter)) {
+    return cachedFooter;
   }
   
-  // ===== FALLBACK FINAL =====
-  // Se nada funcionou, usa o parent direto do input
-  console.warn('[Rabello Voice] ⚠ Usando fallback: parent direto do input');
-  return inputBox.parentElement;
+  // Estratégia simplificada: sobe até encontrar o footer
+  const footer = inputBox.closest('footer');
+  
+  // VALIDAÇÃO ADICIONAL: Garante que o footer está dentro de #main (não na sidebar)
+  if (footer && footer.closest('#main')) {
+    console.log('[Rabello Voice] ✓ Footer encontrado dentro de #main');
+    cachedFooter = footer;
+    return footer;
+  }
+  
+  // Se footer não está em #main, não injeta
+  console.warn('[Rabello Voice] ⚠ Footer encontrado mas não está dentro de #main - não injetando');
+  return null;
 }
+
 
 /**
  * Encontra o botão de envio com múltiplos seletores
@@ -302,53 +274,63 @@ function createIconSVG(type) {
 
 /**
  * Cria um elemento de atalho (shortcut) usando createElement
- * Padrão Factory - Evita innerHTML para melhor segurança e performance
+ * ARQUITETURA: 3 camadas (wrapper > content > icon/label/expand)
  * @param {Object} item - Item do storage (message, audio, media, funnel)
  * @returns {HTMLElement} Elemento div.rv-shortcut-item
  */
 function createShortcutElement(item) {
-  // Container principal
-  const button = document.createElement('div');
-  button.className = 'rv-shortcut-item';
-  button.setAttribute('data-type', item.type); // Para CSS e debug
-  button.setAttribute('role', 'button');
-  button.setAttribute('tabindex', '0');
+  // 1. Container Principal
+  const itemWrapper = document.createElement('div');
+  itemWrapper.className = 'rv-shortcut-item';
+  itemWrapper.setAttribute('data-type', item.type);
+  itemWrapper.setAttribute('role', 'button');
+  itemWrapper.setAttribute('tabindex', '0');
   
-  // Tooltip simples
+  // Tooltip
   if (item.content) {
-    button.title = item.content.substring(0, 100);
+    itemWrapper.title = item.content.substring(0, 100);
   }
   
-  // Container do ícone
-  const iconWrapper = document.createElement('span');
-  iconWrapper.className = 'rv-shortcut-icon';
-  iconWrapper.appendChild(createIconSVG(item.type));
+  // 2. Wrapper de Conteúdo
+  const contentWrapper = document.createElement('div');
+  contentWrapper.className = 'rv-shortcut-content';
   
-  // Label do texto
-  const label = document.createElement('span');
-  label.className = 'rv-shortcut-label';
-  label.textContent = item.title || 'Item';
+  // 3. Ícone (Lado Esquerdo)
+  const iconSpan = document.createElement('span');
+  iconSpan.className = 'rv-shortcut-icon';
+  iconSpan.appendChild(createIconSVG(item.type));
   
-  // Montagem
-  button.appendChild(iconWrapper);
-  button.appendChild(label);
+  // 4. Label (Texto Central)
+  const labelSpan = document.createElement('span');
+  labelSpan.className = 'rv-shortcut-label';
+  labelSpan.textContent = item.title || 'Sem título';
   
-  // Event Listener
-  button.addEventListener('click', (e) => {
+  // 5. Seta de Expansão (Lado Direito)
+  const expandSpan = document.createElement('span');
+  expandSpan.className = 'rv-shortcut-expand';
+  expandSpan.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M8.91 19.92L15.43 13.4C16.2 12.63 16.2 11.37 15.43 10.6L8.91 4.08" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  
+  // Montagem da Hierarquia
+  contentWrapper.appendChild(iconSpan);
+  contentWrapper.appendChild(labelSpan);
+  contentWrapper.appendChild(expandSpan);
+  itemWrapper.appendChild(contentWrapper);
+  
+  // Event Listeners
+  itemWrapper.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
     handleItemClick(item);
   });
   
-  // Acessibilidade - permitir Enter/Space
-  button.addEventListener('keydown', (e) => {
+  itemWrapper.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       handleItemClick(item);
     }
   });
   
-  return button;
+  return itemWrapper;
 }
 
 // Função principal de injeção OTIMIZADA (Agora usa Factory + seletores resilientes!)
@@ -397,7 +379,24 @@ async function injectBar() {
   // Verifica novamente se não foi injetado durante o processamento async
   if (document.getElementById(BAR_ID)) return;
 
-  targetContainer.insertBefore(bar, targetContainer.firstChild);
+  // CORREÇÃO: Append ao final do footer (não insertBefore no início)
+  // Isso evita empurrar a caixa de mensagem para baixo
+  targetContainer.appendChild(bar);
+  
+  // ===== SCROLL HORIZONTAL COM MOUSE WHEEL =====
+  // Permite que o usuário role horizontalmente usando a bolinha do mouse
+  bar.addEventListener('wheel', (e) => {
+    // Se tem scroll horizontal disponível
+    if (bar.scrollWidth > bar.clientWidth) {
+      e.preventDefault(); // Previne scroll vertical da página
+      
+      // Converte scroll vertical em horizontal
+      // deltaY positivo = scrolling down = scroll para direita
+      // deltaY negativo = scrolling up = scroll para esquerda
+      bar.scrollLeft += e.deltaY;
+    }
+  }, { passive: false }); // passive: false permite preventDefault()
+  
   console.log(`[Rabello Voice] ✅ Barra injetada com ${allItems.length} atalho(s)`);
 }
 
@@ -427,7 +426,7 @@ function removeBar() {
   }
 }
 
-// Inserção de Texto (Agora com Clipboard API moderna!)
+// Inserção de Texto (CORRIGIDO: ClipboardEvent com DataTransfer adequado)
 async function insertTextAndSend(text) {
   if (!text) return;
   
@@ -441,30 +440,28 @@ async function insertTextAndSend(text) {
   // Foco necessário
   inputBox.focus();
 
-  // Estratégia moderna: Clipboard API + Paste Event
+  // Estratégia CORRIGIDA: Clipboard API com DataTransfer adequado
   try {
-    // 1. Escreve no clipboard (moderna e assíncrona)
-    await navigator.clipboard.writeText(text);
+    // Cria DataTransfer com o texto
+    const dataTransfer = new DataTransfer();
+    dataTransfer.setData('text/plain', text);
     
-    // 2. Simula evento de paste (React do WhatsApp detecta automaticamente)
+    // Cria evento de paste com clipboardData correto
     const pasteEvent = new ClipboardEvent('paste', {
       bubbles: true,
       cancelable: true,
-      clipboardData: new DataTransfer()
+      clipboardData: dataTransfer
     });
     
-    // Adiciona o texto ao clipboardData do evento
-    pasteEvent.clipboardData.setData('text/plain', text);
-    
-    // Dispara o evento no inputBox
+    // Dispara o evento no inputBox para React detectar
     inputBox.dispatchEvent(pasteEvent);
     
-    console.log('[Rabello Voice] ✓ Texto inserido via Clipboard API');
+    console.log('[Rabello Voice] ✓ Texto inserido via ClipboardEvent');
     
   } catch (clipboardError) {
-    console.warn('[Rabello Voice] Clipboard API falhou, usando fallback:', clipboardError);
+    console.warn('[Rabello Voice] ClipboardEvent falhou, usando fallback:', clipboardError);
     
-    // Fallback 1: Manipulação direta do DOM
+    // Fallback 1: Manipulação direta do DOM + InputEvent
     try {
       // Limpa input primeiro
       inputBox.textContent = '';
@@ -473,7 +470,7 @@ async function insertTextAndSend(text) {
       const textNode = document.createTextNode(text);
       inputBox.appendChild(textNode);
       
-      // Dispara eventos para o React detectar
+      // IMPORTANTE: Dispara eventos com bubbles: true para React detectar
       inputBox.dispatchEvent(new InputEvent('input', { 
         bubbles: true, 
         cancelable: true,
@@ -481,7 +478,10 @@ async function insertTextAndSend(text) {
         data: text
       }));
       
-      console.log('[Rabello Voice] ✓ Texto inserido via DOM manipulation');
+      // Dispara também 'change' para garantir
+      inputBox.dispatchEvent(new Event('change', { bubbles: true }));
+      
+      console.log('[Rabello Voice] ✓ Texto inserido via DOM + InputEvent');
       
     } catch (domError) {
       console.warn('[Rabello Voice] DOM manipulation falhou, usando execCommand:', domError);
@@ -494,15 +494,16 @@ async function insertTextAndSend(text) {
     }
   }
 
-  // Clica no botão enviar após breve delay para garantir que o React processou o input
+  // Clica no botão enviar após delay MAIOR para garantir que o React processou o input
   setTimeout(() => {
     const sendButton = findSendButton();
     if (sendButton) {
       sendButton.click();
+      console.log('[Rabello Voice] ✓ Botão de envio clicado');
     } else {
       console.warn('[Rabello Voice] Botão de envio não encontrado. Mensagem não enviada.');
     }
-  }, 150); // Aumentado para 150ms para dar tempo ao React processar
+  }, 300); // Aumentado para 300ms (anteriormente 150ms) para dar tempo ao React processar
 }
 
 // ==========================================================
@@ -640,7 +641,7 @@ function debouncedInject() {
 }
 
 // Observador focado no container do chat (#main)
-// Esse é o "pesado", mas agora restrito a apenas uma parte da tela.
+// CORRIGIDO: Previne loop infinito e reduz escopo
 function startMainObserver(mainElement) {
     if (mainObserver) mainObserver.disconnect();
 
@@ -648,7 +649,23 @@ function startMainObserver(mainElement) {
         let shouldCheck = false;
         
         for (const mutation of mutations) {
-            // 1. Detectar se nossa barra foi removida
+            // CORREÇÃO CRÍTICA: Ignora mutações causadas pela nossa própria barra
+            if (mutation.target.id === BAR_ID || 
+                (mutation.target.closest && mutation.target.closest(`#${BAR_ID}`))) {
+                continue; // Pula esta mutação
+            }
+            
+            // Se nossa barra foi removida por algo externo
+            if (mutation.addedNodes) {
+                for (const node of mutation.addedNodes) {
+                    // Ignora se o nó adicionado for nossa própria barra
+                    if (node.id === BAR_ID) {
+                        continue;
+                    }
+                }
+            }
+            
+            // 1. Detectar se nossa barra foi removida (por mudança de chat, etc)
             if (mutation.removedNodes) {
                 for (const node of mutation.removedNodes) {
                     if (node.id === BAR_ID) {
@@ -658,21 +675,17 @@ function startMainObserver(mainElement) {
                 }
             }
 
-            // 2. Detectar mudanças relevantes de estrutura no chat (footer, input)
-            // Não olhamos atributos, apenas estrutura (childList)
-            // 2. Detectar mudanças relevantes de estrutura no chat (footer, input)
+            // 2. Detectar mudanças relevantes APENAS no footer
             if (!shouldCheck && mutation.type === 'childList') {
-                // Se adicionou nós, verifica se parece ser o footer ou input
-                if (mutation.addedNodes.length > 0) {
-                     const target = mutation.target;
-                     // Se o alvo for o footer ou conter um footer
-                     if (target.tagName === 'FOOTER' || target.querySelector('footer')) {
-                         shouldCheck = true;
-                     }
-                     // Verifica inputs usando função resiliente
-                     else if (findInputBox()) {
-                         shouldCheck = true;
-                     }
+                const target = mutation.target;
+                
+                // Só age se a mutação for no footer ou em seus filhos diretos
+                if (target.tagName === 'FOOTER' || 
+                    (target.closest && target.closest('footer'))) {
+                    // Verifica se adicionou elementos relevantes
+                    if (mutation.addedNodes.length > 0) {
+                        shouldCheck = true;
+                    }
                 }
             }
             
@@ -682,10 +695,22 @@ function startMainObserver(mainElement) {
         if (shouldCheck) debouncedInject();
     });
 
-    mainObserver.observe(mainElement, {
-        childList: true,
-        subtree: true // Precisamos de subtree dentro do main para ver inputs aninhados
-    });
+    // CORREÇÃO: Observa apenas o footer, não o main inteiro
+    const footer = mainElement.querySelector('footer');
+    if (footer) {
+        mainObserver.observe(footer, {
+            childList: true,
+            subtree: true // Apenas dentro do footer
+        });
+        console.log("[Rabello Voice] Observando apenas o footer do chat.");
+    } else {
+        // Fallback: observa main mas com filtros mais rígidos
+        mainObserver.observe(mainElement, {
+            childList: true,
+            subtree: true
+        });
+        console.log("[Rabello Voice] Footer não encontrado, observando #main (fallback).");
+    }
     
     console.log("[Rabello Voice] Observando container principal (#main).");
 }
