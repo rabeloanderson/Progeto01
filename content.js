@@ -13,79 +13,166 @@ let debounceTimer = null;
 
 /**
  * Encontra a caixa de input do WhatsApp usando múltiplos seletores
- * Ordem: acessibilidade → estrutura → fallback
+ * Atualizado para WhatsApp Web 2026 com seletores modernos
  */
 function findInputBox() {
   const selectors = [
-    // 1. Baseado em acessibilidade (mais estável)
-    'div[contenteditable="true"][role="textbox"][data-tab="10"]',
-    'div[contenteditable="true"][role="textbox"]',
+    // === SELETORES ATUALIZADOS 2026 ===
     
-    // 2. Baseado em aria-label (se disponível)
+    // 1. Novo WhatsApp Web (Lexical Editor - 2024+)
+    'div[contenteditable="true"][data-lexical-editor="true"]',
+    'p[class*="selectable-text"][contenteditable="true"]',
+    'div.lexical-rich-text-input[contenteditable="true"]',
+    
+    // 2. Container principal do editor (mais específico)
+    'div[role="textbox"][contenteditable="true"][data-tab]',
+    'div[role="textbox"][contenteditable="true"]',
+    
+    // 3. Baseado em aria-label/placeholder (multilíngue)
+    'div[aria-placeholder*="Type a message"]',
+    'div[aria-placeholder*="Digite uma mensagem"]',
+    'div[aria-placeholder*="Escreva uma mensagem"]',
+    'div[aria-label*="Type a message"]',
     'div[aria-label*="mensagem"]',
-    'div[aria-placeholder*="mensagem"]',
     
-    // 3. Estrutura conhecida
+    // 4. Estrutura do footer (versões antigas)
     'footer div[contenteditable="true"]',
     '#main footer div[contenteditable="true"]',
+    'div[data-tab="10"][contenteditable="true"]',
     
-    // 4. Fallback genérico
+    // 5. Classes conhecidas (fallback)
     'div[contenteditable="true"].selectable-text',
-    'div.lexical-rich-text-input'
+    'div.copyable-text[contenteditable="true"]',
+    'div._ak1l[contenteditable="true"]', // Classe ofuscada comum
+    
+    // 6. Busca genérica final
+    'footer [contenteditable="true"]',
+    '#main [contenteditable="true"]'
   ];
   
-  for (const selector of selectors) {
+  // Tenta cada seletor
+  for (let i = 0; i < selectors.length; i++) {
+    const selector = selectors[i];
     try {
       const element = document.querySelector(selector);
       if (element && element.isContentEditable) {
-        console.log(`[Rabello Voice] Input encontrado via: ${selector}`);
+        console.log(`[Rabello Voice] ✓ Input encontrado via seletor #${i + 1}: ${selector}`);
         return element;
       }
     } catch (e) {
-      // Seletor inválido, continua para o próximo
+      // Seletor inválido, continua
       continue;
     }
   }
   
-  console.warn('[Rabello Voice] Nenhum input box encontrado.');
+  // DEBUG: Lista TODOS os elementos contenteditable para diagnóstico
+  const allEditables = document.querySelectorAll('[contenteditable="true"]');
+  if (allEditables.length > 0) {
+    console.warn(`[Rabello Voice] ⚠ Encontrados ${allEditables.length} elemento(s) contenteditable, mas nenhum corresponde aos seletores conhecidos.`);
+    console.log('[Rabello Voice] DEBUG - Elementos encontrados:', Array.from(allEditables).map(el => ({
+      tag: el.tagName,
+      role: el.getAttribute('role'),
+      ariaLabel: el.getAttribute('aria-label'),
+      ariaPlaceholder: el.getAttribute('aria-placeholder'),
+      classes: el.className,
+      dataTab: el.getAttribute('data-tab')
+    })));
+  } else {
+    console.warn('[Rabello Voice] ⚠ Nenhum elemento contenteditable encontrado. Aguarde o WhatsApp carregar ou abra uma conversa.');
+  }
+  
   return null;
 }
 
 /**
  * Encontra o container/footer onde a barra será injetada
+ * GARANTE que será injetado no FOOTER do chat, nunca no header
  */
 function findTargetContainer(inputBox) {
   if (!inputBox) return null;
   
+  // ===== ESTRATÉGIA 1: FOOTER ESPECÍFICO DO CHAT =====
+  // Busca o footer que está dentro do #main (área do chat)
   const strategies = [
-    // 1. Footer direto
-    () => document.querySelector('footer'),
-    () => document.querySelector('#main footer'),
+    // 1A. Footer dentro do #main (mais específico e correto)
+    () => {
+      const mainFooter = document.querySelector('#main footer');
+      // Valida que este footer realmente contém o nosso input
+      if (mainFooter && mainFooter.contains(inputBox)) {
+        return mainFooter;
+      }
+      return null;
+    },
     
-    // 2. Subir a árvore a partir do input
+    // 1B. Sobe a partir do input até encontrar footer
     () => inputBox.closest('footer'),
-    () => inputBox.closest('[role="footer"]'),
-    () => inputBox.closest('div[class*="footer"]'),
     
-    // 3. Estrutura relativa ao input (2-3 níveis acima)
-    () => inputBox.parentElement?.parentElement,
-    () => inputBox.parentElement?.parentElement?.parentElement
+    // 1C. Footer com role específico
+    () => {
+      const footer = inputBox.closest('[role="footer"]');
+      if (footer) return footer;
+      return null;
+    },
+    
+    // 1D. Estrutura relativa (parent do input - geralmente é o footer)
+    () => {
+      // Sobe até encontrar um elemento que seja footer ou contenha footer
+      let parent = inputBox.parentElement;
+      let depth = 0;
+      const maxDepth = 5; // Máximo 5 níveis
+      
+      while (parent && depth < maxDepth) {
+        // Se é um footer, retorna
+        if (parent.tagName === 'FOOTER') {
+          return parent;
+        }
+        // Se contém a palavra "footer" na classe
+        if (parent.className && parent.className.toLowerCase().includes('footer')) {
+          return parent;
+        }
+        parent = parent.parentElement;
+        depth++;
+      }
+      return null;
+    }
   ];
   
-  for (const strategy of strategies) {
+  // Tenta cada estratégia
+  for (let i = 0; i < strategies.length; i++) {
     try {
-      const container = strategy();
+      const container = strategies[i]();
       if (container) {
-        console.log(`[Rabello Voice] Container encontrado via estratégia ${strategies.indexOf(strategy) + 1}`);
-        return container;
+        // ===== VALIDAÇÃO ADICIONAL =====
+        // Garante que não é um header/sidebar
+        const tagName = container.tagName.toLowerCase();
+        const classNames = container.className.toLowerCase();
+        
+        // REJEITA se for header, nav, sidebar
+        if (tagName === 'header' || tagName === 'nav') {
+          console.warn(`[Rabello Voice] ⚠ Container rejeitado (${tagName}) - não é footer`);
+          continue;
+        }
+        
+        if (classNames.includes('header') || classNames.includes('sidebar') || classNames.includes('nav')) {
+          console.warn(`[Rabello Voice] ⚠ Container rejeitado (classe: ${classNames}) - não é footer`);
+          continue;
+        }
+        
+        // ACEITA apenas se for realmente footer
+        if (tagName === 'footer' || classNames.includes('footer')) {
+          console.log(`[Rabello Voice] ✓ Footer correto encontrado via estratégia #${i + 1}`);
+          return container;
+        }
       }
     } catch (e) {
       continue;
     }
   }
   
-  console.warn('[Rabello Voice] Nenhum container encontrado.');
-  return null;
+  // ===== FALLBACK FINAL =====
+  // Se nada funcionou, usa o parent direto do input
+  console.warn('[Rabello Voice] ⚠ Usando fallback: parent direto do input');
+  return inputBox.parentElement;
 }
 
 /**
@@ -162,7 +249,109 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   }
 });
 
-// Função principal de injeção OTIMIZADA (Agora usa cache + seletores resilientes!)
+// ========== FÁBRICA DE UI (FACTORY PATTERN) ==========
+
+/**
+ * Retorna o SVG apropriado para cada tipo de item
+ * @param {string} type - Tipo do item (message, audio, media, funnel)
+ * @returns {SVGElement} Elemento SVG do ícone
+ */
+function createIconSVG(type) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('width', '18');
+  svg.setAttribute('height', '18');
+  svg.setAttribute('viewBox', '0 0 18 18');
+  svg.setAttribute('fill', 'none');
+  
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('stroke', 'currentColor');
+  path.setAttribute('stroke-width', '1.2');
+  path.setAttribute('stroke-linecap', 'round');
+  path.setAttribute('stroke-linejoin', 'round');
+  
+  // Define os ícones por tipo
+  switch(type) {
+    case 'message':
+      // Ícone de mensagem (chat bubble)
+      path.setAttribute('d', 'M6.375 14.25H6C3 14.25 1.5 13.5 1.5 9.75V6C1.5 3 3 1.5 6 1.5H12C15 1.5 16.5 3 16.5 6V9.75C16.5 12.75 15 14.25 12 14.25H11.625C11.4 14.25 11.18 14.36 11.04 14.54L9.9 16.04C9.4 16.7 8.6 16.7 8.1 16.04L6.96 14.54C6.84 14.38 6.56 14.25 6.375 14.25Z');
+      break;
+      
+    case 'audio':
+      // Ícone de áudio (microfone)
+      path.setAttribute('d', 'M9 1.5C7.34 1.5 6 2.84 6 4.5V9C6 10.66 7.34 12 9 12C10.66 12 12 10.66 12 9V4.5C12 2.84 10.66 1.5 9 1.5Z M15 8.25C15 11.15 12.76 13.54 9.9 13.92V15.75H8.1V13.92C5.24 13.54 3 11.15 3 8.25');
+      break;
+      
+    case 'media':
+      // Ícone de imagem/mídia
+      path.setAttribute('d', 'M6.375 1.5H11.625C14.625 1.5 16.5 3.375 16.5 6.375V11.625C16.5 14.625 14.625 16.5 11.625 16.5H6.375C3.375 16.5 1.5 14.625 1.5 11.625V6.375C1.5 3.375 3.375 1.5 6.375 1.5Z M6.75 6.75C5.92 6.75 5.25 6.08 5.25 5.25C5.25 4.42 5.92 3.75 6.75 3.75C7.58 3.75 8.25 4.42 8.25 5.25C8.25 6.08 7.58 6.75 6.75 6.75Z M2.4 13.42L5.76 10.98C6.24 10.64 6.9 10.68 7.33 11.06L7.56 11.27C8.04 11.69 8.79 11.69 9.27 11.27L12.15 8.73C12.63 8.31 13.38 8.31 13.86 8.73L16.5 11.04');
+      break;
+      
+    case 'funnel':
+      // Ícone de funil (flow/workflow)
+      path.setAttribute('d', 'M11.9 15.8C11.9 16.4 11.6 17 11.1 17.3L10 18C9.4 18.4 8.6 18.4 8 18L6.9 17.3C6.4 17 6.1 16.4 6.1 15.8V10.7C6.1 10.3 5.9 9.6 5.6 9.3L2.3 6.4C1.9 6.1 1.5 5.4 1.5 4.9V3.1C1.5 2.1 2.3 1.5 3.2 1.5H14.8C15.7 1.5 16.5 2.2 16.5 3.1V4.8C16.5 5.5 16 6.2 15.6 6.5');
+      break;
+      
+    default:
+      // Ícone genérico (círculo)
+      path.setAttribute('d', 'M9 16.5C13.14 16.5 16.5 13.14 16.5 9C16.5 4.86 13.14 1.5 9 1.5C4.86 1.5 1.5 4.86 1.5 9C1.5 13.14 4.86 16.5 9 16.5Z');
+  }
+  
+  svg.appendChild(path);
+  return svg;
+}
+
+/**
+ * Cria um elemento de atalho (shortcut) usando createElement
+ * Padrão Factory - Evita innerHTML para melhor segurança e performance
+ * @param {Object} item - Item do storage (message, audio, media, funnel)
+ * @returns {HTMLElement} Elemento div.rv-shortcut-item
+ */
+function createShortcutElement(item) {
+  // Container principal
+  const button = document.createElement('div');
+  button.className = 'rv-shortcut-item';
+  button.setAttribute('data-type', item.type); // Para CSS e debug
+  button.setAttribute('role', 'button');
+  button.setAttribute('tabindex', '0');
+  
+  // Tooltip simples
+  if (item.content) {
+    button.title = item.content.substring(0, 100);
+  }
+  
+  // Container do ícone
+  const iconWrapper = document.createElement('span');
+  iconWrapper.className = 'rv-shortcut-icon';
+  iconWrapper.appendChild(createIconSVG(item.type));
+  
+  // Label do texto
+  const label = document.createElement('span');
+  label.className = 'rv-shortcut-label';
+  label.textContent = item.title || 'Item';
+  
+  // Montagem
+  button.appendChild(iconWrapper);
+  button.appendChild(label);
+  
+  // Event Listener
+  button.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleItemClick(item);
+  });
+  
+  // Acessibilidade - permitir Enter/Space
+  button.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleItemClick(item);
+    }
+  });
+  
+  return button;
+}
+
+// Função principal de injeção OTIMIZADA (Agora usa Factory + seletores resilientes!)
 async function injectBar() {
   // 1. Verifica se a barra JÁ existe no DOM (rápido)
   if (document.getElementById(BAR_ID)) return;
@@ -186,41 +375,22 @@ async function injectBar() {
   
   if (!cachedData) return;
   
-  let allItems = [];
-  
-  // Prepara lista de itens do cache
-  if (cachedData.messages) cachedData.messages.forEach(item => allItems.push({ ...item, type: 'message' }));
-  if (cachedData.audios) cachedData.audios.forEach(item => allItems.push({ ...item, type: 'audio' }));
-  if (cachedData.medias) cachedData.medias.forEach(item => allItems.push({ ...item, type: 'media' }));
-  if (cachedData.funnels) cachedData.funnels.forEach(item => allItems.push({ ...item, type: 'funnel' }));
+  // Prepara lista unificada de itens do cache
+  const allItems = [
+    ...(cachedData.messages || []).map(i => ({...i, type: 'message'})),
+    ...(cachedData.audios || []).map(i => ({...i, type: 'audio'})),
+    ...(cachedData.medias || []).map(i => ({...i, type: 'media'})),
+    ...(cachedData.funnels || []).map(i => ({...i, type: 'funnel'}))
+  ];
 
   if (allItems.length === 0) return;
 
-  // 5. Renderização (Criar Elementos)
+  // 5. Renderização (Criar Elementos usando Factory Pattern)
   const bar = document.createElement('div');
   bar.id = BAR_ID;
   
   allItems.forEach(item => {
-    const btn = document.createElement('button');
-    let typeClass = '';
-    if (item.type === 'message') typeClass = 'rv-msg';
-    else if (item.type === 'audio' || item.type === 'media') typeClass = 'rv-media';
-    else if (item.type === 'funnel') typeClass = 'rv-funnel';
-    
-    btn.className = `rv-chip-btn ${typeClass}`;
-    btn.textContent = item.title || "Item";
-    btn.dataset.type = item.type; // Útil para debug
-    
-    // Tooltip simples para conteúdo longo
-    if(item.content) btn.title = item.content.substring(0, 50);
-
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation(); // Impede que o clique propague para o chat
-      handleItemClick(item);
-    });
-    
-    bar.appendChild(btn);
+    bar.appendChild(createShortcutElement(item));
   });
 
   // 6. Inserção Segura no DOM
@@ -228,7 +398,7 @@ async function injectBar() {
   if (document.getElementById(BAR_ID)) return;
 
   targetContainer.insertBefore(bar, targetContainer.firstChild);
-  console.log("[Rabello Voice] Barra injetada.");
+  console.log(`[Rabello Voice] ✅ Barra injetada com ${allItems.length} atalho(s)`);
 }
 
 // Lógica de clique (Agora usa Queue Manager!)
@@ -551,18 +721,61 @@ bodyObserver.observe(document.body, {
     subtree: false // IMPORTANTE: False para não pesar. Só queremos filhos diretos (geralmente onde #app ou #main vivem)
 });
 
-// ========== INICIALIZAÇÃO ==========
+// ========== INICIALIZAÇÃO COM RETRY INTELIGENTE ==========
+
+let retryCount = 0;
+const MAX_RETRIES = 15; // 15 tentativas x 2s = 30 segundos
+const RETRY_INTERVAL = 2000; // 2 segundos
+
+/**
+ * Tenta injetar a barra com sistema de retry
+ */
+async function tryInjectWithRetry() {
+  const inputBox = findInputBox();
+  
+  if (inputBox) {
+    // Sucesso! Input encontrado
+    console.log('[Rabello Voice] ✅ WhatsApp Web detectado com sucesso!');
+    
+    // Inicializa observadores
+    const existingMain = document.getElementById('main');
+    if (existingMain) {
+      startMainObserver(existingMain);
+    }
+    
+    // Injeta a barra
+    await injectBar();
+    return true;
+  } else {
+    // Ainda não encontrou
+    retryCount++;
+    
+    if (retryCount < MAX_RETRIES) {
+      console.log(`[Rabello Voice] ⏳ Aguardando WhatsApp carregar... Tentativa ${retryCount}/${MAX_RETRIES}`);
+      setTimeout(tryInjectWithRetry, RETRY_INTERVAL);
+    } else {
+      console.error('[Rabello Voice] ❌ Timeout: WhatsApp Web não carregou após 30s.');
+      console.error('[Rabello Voice] 💡 Possíveis soluções:');
+      console.error('   1. Abra uma conversa no WhatsApp Web');
+      console.error('   2. Recarregue a página (F5)');
+      console.error('   3. Verifique se está em https://web.whatsapp.com');
+    }
+    return false;
+  }
+}
+
 // 1. Carrega cache primeiro
 loadCacheFromStorage().then(() => {
-  console.log('[Rabello Voice] Inicialização completa.');
+  console.log('[Rabello Voice] 🚀 Iniciando extensão...');
+  console.log('[Rabello Voice] 📡 Procurando por WhatsApp Web...');
   
-  // 2. Inicializa observadores e injeta barra
-  const existingMain = document.getElementById('main');
-  if (existingMain) {
-      startMainObserver(existingMain);
-      injectBar(); // Tenta injetar imediatamente
-  } else {
-      // Fallback: Tenta injetar mesmo sem main, caso o layout seja diferente
-      injectBar();
-  }
+  // 2. Inicia tentativas de injeção
+  tryInjectWithRetry();
 });
+
+// 3. Inicia observação leve no body (para detectar quando #main aparecer)
+bodyObserver.observe(document.body, {
+    childList: true,
+    subtree: false
+});
+
