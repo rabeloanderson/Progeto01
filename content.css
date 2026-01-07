@@ -1,0 +1,68 @@
+/* Container da barra de atalhos */
+#rabello-voice-bar {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: #202c33; /* Dark theme compatible background */
+  border-top: 1px solid #37404a;
+  overflow-x: auto;
+  white-space: nowrap;
+  width: 100%;
+  box-sizing: border-box;
+  z-index: 999;
+  /* Scrollbar customizada para combinar */
+  scrollbar-width: thin;
+  scrollbar-color: #555 #202c33;
+}
+
+#rabello-voice-bar::-webkit-scrollbar {
+  height: 6px;
+}
+
+#rabello-voice-bar::-webkit-scrollbar-track {
+  background: #202c33;
+}
+
+#rabello-voice-bar::-webkit-scrollbar-thumb {
+  background-color: #555;
+  border-radius: 3px;
+}
+
+/* Base do botão */
+.rv-chip-btn {
+  border: none;
+  padding: 6px 12px;
+  border-radius: 16px; /* Arredondado estilo 'chip' */
+  color: white;
+  font-family: inherit; /* Herda a fonte do WhatsApp */
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  user-select: none;
+}
+
+.rv-chip-btn:hover {
+  opacity: 0.9;
+}
+
+.rv-chip-btn:active {
+  transform: scale(0.98);
+}
+
+/* Tipos de Botões */
+.rv-chip-btn.rv-msg {
+  background-color: #e74c3c; /* Vermelho */
+}
+
+.rv-chip-btn.rv-media {
+  background-color: #5dade2; /* Azul */
+}
+
+.rv-chip-btn.rv-funnel {
+  background-color: #2ecc71; /* Verde */
+}
