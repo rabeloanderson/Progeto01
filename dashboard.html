@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rabello Voice v1.0 - Dashboard</title>
+
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- FontAwesome (RECOMENDO colocar local depois para extensão) -->
+  <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css" />
+</head>
+
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon-wrapper" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+          <line x1="12" y1="19" x2="12" y2="23"></line>
+          <line x1="8" y1="23" x2="16" y2="23"></line>
+        </svg>
+      </div>
+      <span>Rabello Voice</span>
+      <span class="version-badge">v1.0</span>
+    </div>
+
+    <div class="header-actions">
+      <button type="button" class="icon-btn" id="theme-toggle" title="Alternar Tema" aria-label="Alternar tema">
+        <i class="fa-regular fa-sun"></i>
+      </button>
+
+      <button type="button" class="icon-btn" id="btn-settings" title="Configurações" aria-label="Abrir configurações">
+        <i class="fa-solid fa-gear"></i>
+      </button>
+
+      <button type="button" class="icon-btn" id="btn-logout" title="Sair" aria-label="Sair">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="main-container">
+
+    <!-- Sidebar -->
+    <nav class="sidebar" aria-label="Menu de navegação">
+      <div class="nav-item active" id="nav-messages" role="button" tabindex="0">
+        <i class="fa-regular fa-message" title="Mensagens"></i>
+        <span>Mensagens</span>
+      </div>
+
+      <div class="nav-item" id="nav-audios" role="button" tabindex="0">
+        <i class="fa-solid fa-music" title="Áudios"></i>
+        <span>Áudios</span>
+      </div>
+
+      <div class="nav-item" id="nav-medias" role="button" tabindex="0">
+        <i class="fa-regular fa-image" title="Mídias"></i>
+        <span>Mídias</span>
+      </div>
+
+      <div class="nav-item" id="nav-funnels" role="button" tabindex="0">
+        <i class="fa-solid fa-filter" title="Funis"></i>
+        <span>Funis</span>
+      </div>
+    </nav>
+
+    <!-- Content Area -->
+    <main class="content">
+
+      <!-- Header da Página -->
+      <div class="content-header">
+        <div class="content-title">
+          <h2 id="page-title">Mensagens</h2>
+          <p id="page-desc">Gerencie, visualize e aperfeiçoe suas mensagens com facilidade.</p>
+        </div>
+
+        <button type="button" class="btn-add" title="Adicionar Novo Item" aria-label="Adicionar novo item">
+          <i class="fa-solid fa-plus"></i> Adicionar
+        </button>
+      </div>
+
+      <!-- Lista Principal -->
+      <div class="message-list" aria-label="Lista de itens">
+        <!-- Renderizado via JS -->
+      </div>
+
+      <!-- Funnel Detail View -->
+      <section id="funnel-detail-view" class="is-hidden" aria-label="Detalhes do Funil">
+        <div class="funnel-header">
+          <div class="funnel-info">
+            <div class="funnel-title-row">
+              <button type="button" id="btn-close-funnel-detail" class="btn-icon-only" title="Voltar" aria-label="Voltar">
+                <i class="fa-solid fa-circle-arrow-left"></i>
+              </button>
+
+              <h2 id="funnel-detail-title" class="m0">Funil: Título</h2>
+            </div>
+
+            <p class="funnel-subtitle">Este funil é enviado em 0s</p>
+          </div>
+
+          <div class="funnel-header-actions">
+            <button type="button" class="btn-secondary" id="btn-edit-funnel-meta" title="Editar Funil" aria-label="Editar funil">
+              <i class="fa-solid fa-pen"></i> Editar Funil
+            </button>
+
+            <button type="button" class="btn-add-funnel-item btn-primary" title="Adicionar Item ao Funil" aria-label="Adicionar item ao funil">
+              <i class="fa-solid fa-plus"></i> Adicionar
+            </button>
+          </div>
+        </div>
+
+        <hr class="divider" />
+
+        <div id="funnel-items-list" class="funnel-items-list">
+          <p class="empty-text">Não existem itens adicionados neste funil!</p>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <span>Developed by: Rabello Voice</span>
+    <span>Versão v1.0</span>
+  </footer>
+
+
+  <!-- ===========================
+       MODAIS
+  ============================ -->
+
+  <!-- Edit Funnel Item Modal -->
+  <div id="editFunnelItemModal" class="modal-overlay is-hidden" role="dialog" aria-modal="true" aria-labelledby="edit-funnel-title">
+    <div class="modal-container modal-sm">
+      <div class="modal-header">
+        <h3 id="edit-funnel-title">Detalhes do Item</h3>
+        <button type="button" id="btn-close-edit-funnel-modal" class="close-btn" title="Fechar" aria-label="Fechar">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="duration-row">
+          <div class="input-group">
+            <label for="edit-funnel-min" class="label-muted">Duração dos Minutos</label>
+            <input type="number" id="edit-funnel-min" placeholder="00" class="dark-input" min="0" />
+          </div>
+
+          <div class="input-group">
+            <label for="edit-funnel-sec" class="label-muted">Duração dos Segundos</label>
+            <input type="number" id="edit-funnel-sec" placeholder="00" class="dark-input" min="0" max="59" />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="btn-save-funnel-item" class="btn-block" title="Salvar Alterações">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Add Funnel Item Modal -->
+  <div id="addFunnelItemModal" class="modal-overlay is-hidden" role="dialog" aria-modal="true" aria-labelledby="add-funnel-item-title">
+    <div class="modal-container modal-sm">
+      <div class="modal-header">
+        <h3 id="add-funnel-item-title">Adicionar item</h3>
+        <button type="button" id="btn-close-add-funnel-modal" class="close-btn" title="Fechar" aria-label="Fechar">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="input-group">
+          <select id="funnel-item-type" class="dark-input" title="Selecione o tipo">
+            <option value="" disabled selected>Selecione o tipo do item</option>
+            <option value="messages">Mensagens</option>
+            <option value="audios">Áudios</option>
+            <option value="medias">Mídias</option>
+          </select>
+        </div>
+
+        <div id="funnel-step-config" class="is-hidden mt-15">
+          <div class="input-group">
+            <select id="funnel-message-select" class="dark-input" title="Selecione o item">
+              <option value="" disabled selected>Selecione</option>
+            </select>
+          </div>
+
+          <div class="duration-row">
+            <div class="input-group">
+              <label for="add-funnel-min" class="label-muted">Duração dos Minutos</label>
+              <input type="number" id="add-funnel-min" placeholder="00" class="dark-input" min="0" title="Minutos" />
+            </div>
+
+            <div class="input-group">
+              <label for="add-funnel-sec" class="label-muted">Duração dos Segundos</label>
+              <input type="number" id="add-funnel-sec" placeholder="00" class="dark-input" min="0" max="59" title="Segundos" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="btn-confirm-add-funnel-item" class="btn-block" title="Adicionar Item">Adicionar</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Add/Edit Item Modal -->
+  <div id="addMessageModal" class="modal-overlay is-hidden" role="dialog" aria-modal="true" aria-labelledby="message-modal-title">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 id="message-modal-title">Adicionar Mensagem</h3>
+        <button type="button" id="btn-close-message-modal" class="close-btn" title="Fechar" aria-label="Fechar">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+
+        <div class="input-group search-bar-wrapper">
+          <label for="message-title-input" class="floating-label">Título</label>
+          <input type="text" id="message-title-input" placeholder="Nome" class="dark-input" />
+        </div>
+
+        <div class="toggles-row" style="display: flex; gap: 20px; align-items: center; justify-content: flex-start; margin-bottom: 15px;">
+            <div class="toggle-group is-hidden" id="field-view-once" style="margin-bottom: 0;">
+              <label for="chk-view-once" style="margin-right: 10px;">Visualização unica?</label>
+              <label class="switch" title="Ativar Visualização Única">
+                <input id="chk-view-once" type="checkbox" />
+                <span class="slider round"></span>
+              </label>
+            </div>
+
+            <div class="toggle-group" id="field-forwarded" style="margin-bottom: 0;">
+              <label for="chk-forwarded" style="margin-right: 10px;">Enviar como encaminhado?</label>
+              <label class="switch" title="Marcar como Encaminhado">
+                <input id="chk-forwarded" type="checkbox" />
+                <span class="slider round"></span>
+              </label>
+            </div>
+        </div>
+
+        <div class="editor-container" id="field-editor">
+          <div class="editor-tabs">
+            <button type="button" class="editor-tab active" title="Modo Edição">Editar</button>
+            <button type="button" class="editor-tab" title="Modo Visualização">Visualizar</button>
+            <div class="editor-tools">
+              <button type="button" title="Negrito"><i class="fa-solid fa-bold"></i></button>
+              <button type="button" title="Itálico"><i class="fa-solid fa-italic"></i></button>
+              <button type="button" title="Tachado"><i class="fa-solid fa-strikethrough"></i></button>
+              <button type="button" title="Fonte"><i class="fa-solid fa-font"></i></button>
+            </div>
+          </div>
+          <textarea class="editor-textarea" aria-label="Conteúdo"></textarea>
+        </div>
+
+        <div class="dropzone-container is-hidden" id="field-dropzone">
+          <i class="fa-solid fa-upload"></i>
+          <p>Clique aqui ou arraste o arquivo</p>
+          <span class="dropzone-hint">Formatos aceitos</span>
+          <input type="file" id="audio-file-input" class="is-hidden" />
+        </div>
+
+        <!-- Media Preview -->
+        <div class="media-preview-container is-hidden" id="field-media-preview">
+          <div class="media-info-header">
+            <span class="media-filename">Arquivo</span>
+            <button type="button" class="btn-close-media" title="Remover Mídia" aria-label="Remover mídia">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <div class="media-content">
+            <img src="" alt="Prévia da mídia" class="media-preview-img is-hidden" />
+            <video controls class="media-preview-video is-hidden"></video>
+            <iframe class="media-preview-iframe is-hidden"></iframe>
+            <div class="media-preview-error is-hidden">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <span>Format not supported or invalid.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Audio Player -->
+        <div class="audio-player-container is-hidden" id="field-audio-player">
+          <div class="audio-info-row">
+            <span class="audio-filename">Audio.mp3</span>
+            <button type="button" class="btn-close-player" title="Remover Áudio" aria-label="Remover áudio">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <div class="audio-controls-row">
+            <button type="button" class="btn-play-audio" title="Reproduzir/Pausar" aria-label="Reproduzir ou pausar">
+              <i class="fa-solid fa-play"></i>
+            </button>
+
+            <div class="waveform-visual" aria-hidden="true">
+              <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+              <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+              <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+              <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+              <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+              <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+              <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+              <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+              <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+            </div>
+
+            <span class="audio-duration">0:46</span>
+          </div>
+
+          <div class="audio-timestamp">0:00</div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="btn-save-message-modal" class="btn-block" title="Confirmar">Adicionar</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="modal-overlay is-hidden" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="modal-container modal-lg">
+      <div class="modal-header">
+        <h3 id="settings-title">Configurações</h3>
+        <button type="button" id="btn-close-settings-modal" class="close-btn" aria-label="Fechar">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+
+        <div class="settings-section">
+          <h4>Limpar Extensão</h4>
+          <p class="settings-desc">*OBS: Todas suas mensagens, áudios, mídias, funis e agendamentos atuais serão limpadas.</p>
+          <button type="button" id="btn-clear-data" class="btn-block btn-secondary">Limpar</button>
+        </div>
+
+        <hr class="divider" />
+
+        <div class="settings-section">
+          <h4>Importar Arquivo</h4>
+          <p class="settings-desc">*OBS: Todas suas mensagens, áudios, mídias, funis e agendamentos atuais serão substituídos.</p>
+
+          <div class="dropzone-container import-dropzone" id="import-dropzone">
+            <i class="fa-solid fa-upload import-icon"></i>
+            <p>Clique aqui ou arraste o novo Backup a ser salvo</p>
+            <span class="dropzone-hint">Formato aceito '.json'</span>
+            <input type="file" id="import-file-input" accept=".json" class="is-hidden" />
+          </div>
+
+          <!-- IDs corrigidos para bater com seu JS -->
+          <button type="button" id="btn-trigger-import" class="btn-block btn-secondary mb-15">Importar Arquivo</button>
+          <button type="button" id="btn-export-data" class="btn-block btn-secondary">Exportar Arquivo</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Delete Confirmation Modal -->
+  <div id="deleteModal" class="modal-overlay is-hidden" role="dialog" aria-modal="true" aria-labelledby="delete-title">
+    <div class="modal-container delete-modal-container">
+      <div class="modal-header">
+        <h3 id="delete-title">Deletar Item</h3>
+      </div>
+      <div class="modal-body">
+        <p>Você está deletando um item, deseja realmente continuar?</p>
+      </div>
+      <div class="modal-footer delete-footer">
+        <button type="button" id="btn-cancel-delete" class="btn-cancel" title="Cancelar">Cancelar</button>
+        <button type="button" id="btn-confirm-delete" class="btn-delete-confirm" title="Confirmar Exclusão">Deletar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="db.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

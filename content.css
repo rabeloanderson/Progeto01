@@ -1,0 +1,113 @@
+/* =========================================================
+   RABELLO VOICE - DESIGN NEON (ESTILO EXECUTIVO)
+========================================================= */
+
+#rabello-voice-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  width: 100%;
+  /* Usa variáveis CSS do WhatsApp para compatibilidade de tema */
+  background-color: var(--panel-background, var(--background-default, #111b21));
+  border-top: 1px solid var(--border-default, rgba(134, 150, 160, 0.15));
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+  min-height: 52px;
+  box-sizing: border-box;
+  /* Garante que fica como bloco separado */
+  flex-shrink: 0;
+  position: relative;
+  z-index: 100;
+}
+
+#rabello-voice-bar::-webkit-scrollbar {
+  display: none;
+}
+
+/* O CONTAINER DO BOTÃO */
+.rv-shortcut-item {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  border-radius: 17px;
+  background-color: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  border: 1px solid currentColor;
+  padding: 0;
+  margin-right: 4px;
+}
+
+.rv-shortcut-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  transform: translateY(-1px);
+}
+
+/* LADO ESQUERDO (Ícone + Texto) */
+.rv-shortcut-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px 0 14px;
+  height: 100%;
+}
+
+.rv-shortcut-text {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.rv-shortcut-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* LADO DIREITO (A Seta >) */
+.rv-shortcut-expand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  height: 100%;
+  border-left: 1px solid currentColor;
+}
+
+.rv-shortcut-expand svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* =========================================================
+   CORES NEON (Baseado na Imagem de Exemplo)
+========================================================= */
+
+/* VERDE (Funis) */
+.rv-shortcut-item[data-type="funnels"] {
+  color: #2ecc71;
+  border-color: rgba(46, 204, 113, 0.4);
+}
+
+/* VERMELHO (Mensagens) */
+.rv-shortcut-item[data-type="messages"] {
+  color: #ff5252;
+  border-color: rgba(255, 82, 82, 0.4);
+}
+
+/* AZUL/ROXO (Mídias e Áudios) */
+.rv-shortcut-item[data-type="medias"],
+.rv-shortcut-item[data-type="audios"] {
+  color: #5352ed;
+  border-color: rgba(83, 82, 237, 0.4);
+}
+
+/* Estilo para quando o botão é clicado (feedback visual) */
+.rv-shortcut-item:active {
+  transform: scale(0.95);
+  opacity: 0.8;
+}

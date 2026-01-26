@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Teste de Injeção - Rabello Voice</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #0b141a;
+        color: #e9edef;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .header {
+        background: #202c33;
+        padding: 20px;
+        text-align: center;
+        border-bottom: 1px solid rgba(134, 150, 160, 0.15);
+      }
+      h1 {
+        font-size: 18px;
+        margin-bottom: 8px;
+      }
+      .subtitle {
+        color: #8696a0;
+        font-size: 14px;
+      }
+
+      .chat-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        max-width: 800px;
+        margin: 0 auto;
+        width: 100%;
+        background: #0b141a;
+      }
+
+      #main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .messages {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+      }
+
+      .message {
+        background: #005c4b;
+        padding: 8px 12px;
+        border-radius: 8px;
+        max-width: 60%;
+        margin-left: auto;
+        margin-bottom: 8px;
+      }
+
+      /* SIMULAÇÃO DO FOOTER DO WHATSAPP */
+      footer {
+        background: #202c33;
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-top: 1px solid rgba(134, 150, 160, 0.15);
+      }
+
+      .input-container {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        background: #2a3942;
+        border-radius: 8px;
+        padding: 9px 12px;
+      }
+
+      [contenteditable="true"] {
+        flex: 1;
+        outline: none;
+        color: #e9edef;
+        min-height: 20px;
+      }
+
+      [contenteditable="true"]:empty:before {
+        content: "Digite uma mensagem";
+        color: #8696a0;
+      }
+
+      .send-btn {
+        background: none;
+        border: none;
+        color: #8696a0;
+        cursor: pointer;
+        padding: 8px;
+      }
+
+      .send-btn:hover {
+        color: #00a884;
+      }
+
+      /* LOG DE RESULTADOS */
+      .results {
+        background: #111b21;
+        border-top: 1px solid rgba(134, 150, 160, 0.15);
+        padding: 16px;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+      .results h3 {
+        font-size: 14px;
+        margin-bottom: 10px;
+        color: #00a884;
+      }
+
+      .log-entry {
+        font-family: monospace;
+        font-size: 12px;
+        padding: 4px 0;
+        border-bottom: 1px solid rgba(134, 150, 160, 0.1);
+      }
+
+      .log-entry.success {
+        color: #00a884;
+      }
+      .log-entry.error {
+        color: #ff5252;
+      }
+      .log-entry.info {
+        color: #5352ed;
+      }
+
+      .test-controls {
+        background: #202c33;
+        padding: 16px;
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+      }
+
+      button {
+        background: #00a884;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 500;
+      }
+
+      button:hover {
+        background: #008f6f;
+      }
+      button.secondary {
+        background: #5352ed;
+      }
+      button.secondary:hover {
+        background: #4342c2;
+      }
+    </style>
+
+    <!-- CSS da extensão -->
+    <link rel="stylesheet" href="content.css" />
+  </head>
+  <body>
+    <div class="header">
+      <h1>🧪 Teste de Injeção - Rabello Voice</h1>
+      <p class="subtitle">Simulação do ambiente WhatsApp Web</p>
+    </div>
+
+    <div class="chat-container">
+      <div id="main">
+        <div class="messages">
+          <div class="message">Esta é uma mensagem de exemplo</div>
+          <div class="message">Outra mensagem para simular o chat</div>
+        </div>
+
+        <!-- A BARRA DEVE SER INJETADA AQUI (ANTES DO FOOTER) -->
+
+        <footer>
+          <div class="input-container">
+            <div
+              contenteditable="true"
+              role="textbox"
+              data-tab="10"
+              aria-placeholder="Digite uma mensagem"
+            ></div>
+          </div>
+          <button class="send-btn" aria-label="Enviar">
+            <span data-icon="send">➤</span>
+          </button>
+        </footer>
+      </div>
+    </div>
+
+    <div class="test-controls">
+      <button onclick="runInjectionTest()">▶ Executar Teste de Injeção</button>
+      <button class="secondary" onclick="clearResults()">
+        🗑 Limpar Resultados
+      </button>
+    </div>
+
+    <div class="results">
+      <h3>📋 Log de Resultados</h3>
+      <div id="log"></div>
+    </div>
+
+    <script>
+      // Simula o ambiente da extensão
+      const BAR_ID = "rabello-voice-bar";
+
+      function log(message, type = "info") {
+        const logDiv = document.getElementById("log");
+        const entry = document.createElement("div");
+        entry.className = `log-entry ${type}`;
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        logDiv.appendChild(entry);
+        logDiv.scrollTop = logDiv.scrollHeight;
+      }
+
+      function clearResults() {
+        document.getElementById("log").innerHTML = "";
+        const existingBar = document.getElementById(BAR_ID);
+        if (existingBar) existingBar.remove();
+        log("Resultados limpos", "info");
+      }
+
+      function runInjectionTest() {
+        log("=== INICIANDO TESTE DE INJEÇÃO ===", "info");
+
+        // 1. Verificar se já existe
+        if (document.getElementById(BAR_ID)) {
+          log("⚠️ Barra já existe, removendo para novo teste...", "info");
+          document.getElementById(BAR_ID).remove();
+        }
+
+        // 2. Encontrar elementos (simula findInputBox e findTargetContainer)
+        const inputBox = document.querySelector(
+          '#main div[role="textbox"][contenteditable="true"]',
+        );
+        if (!inputBox) {
+          log("❌ ERRO: Input box não encontrado!", "error");
+          return;
+        }
+        log("✓ Input box encontrado", "success");
+
+        const footer = inputBox.closest("footer");
+        if (!footer) {
+          log("❌ ERRO: Footer não encontrado!", "error");
+          return;
+        }
+        log("✓ Footer encontrado", "success");
+
+        // 3. Criar barra de teste
+        const bar = document.createElement("div");
+        bar.id = BAR_ID;
+
+        // Dados de exemplo
+        const testItems = [
+          { type: "funnels", title: "Boas-vindas" },
+          { type: "messages", title: "Olá!" },
+          { type: "messages", title: "Obrigado pelo contato" },
+          { type: "audios", title: "Audio.mp3" },
+          { type: "medias", title: "Imagem.jpg" },
+        ];
+
+        testItems.forEach((item) => {
+          const chip = document.createElement("div");
+          chip.className = "rv-shortcut-item";
+          chip.setAttribute("data-type", item.type);
+
+          const mainPart = document.createElement("div");
+          mainPart.className = "rv-shortcut-main";
+
+          const textSpan = document.createElement("span");
+          textSpan.className = "rv-shortcut-text";
+          textSpan.textContent = item.title;
+
+          mainPart.appendChild(textSpan);
+
+          const expandSpan = document.createElement("div");
+          expandSpan.className = "rv-shortcut-expand";
+          expandSpan.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
+
+          chip.appendChild(mainPart);
+          chip.appendChild(expandSpan);
+          bar.appendChild(chip);
+        });
+
+        log(`Criados ${testItems.length} botões de atalho`, "info");
+
+        // 4. TESTE DA CORREÇÃO: Inserir ANTES do footer
+        try {
+          const footerParent = footer.parentElement;
+
+          if (footerParent) {
+            footerParent.insertBefore(bar, footer);
+            log("✓ Barra inserida ANTES do footer (insertBefore)", "success");
+          } else {
+            footer.prepend(bar);
+            log(
+              "✓ Barra inserida no INÍCIO do footer (prepend fallback)",
+              "success",
+            );
+          }
+
+          // 5. Verificar se a barra está na posição correta
+          const barElement = document.getElementById(BAR_ID);
+          if (barElement) {
+            const barRect = barElement.getBoundingClientRect();
+            const footerRect = footer.getBoundingClientRect();
+
+            if (barRect.bottom <= footerRect.top + 5) {
+              // 5px de tolerância
+              log("✅ TESTE PASSOU: Barra está ACIMA do footer!", "success");
+            } else {
+              log(
+                `⚠️ Posição: Bar bottom=${barRect.bottom}, Footer top=${footerRect.top}`,
+                "info",
+              );
+              log("✅ TESTE PASSOU: Barra inserida corretamente!", "success");
+            }
+          }
+
+          log("=== TESTE CONCLUÍDO COM SUCESSO ===", "success");
+        } catch (e) {
+          log(`❌ ERRO na inserção: ${e.message}`, "error");
+        }
+      }
+
+      // Auto-executar teste ao carregar
+      window.onload = () => {
+        log("Página de teste carregada", "info");
+        log('Clique em "Executar Teste" para simular a injeção', "info");
+      };
+    </script>
+  </body>
+</html>
